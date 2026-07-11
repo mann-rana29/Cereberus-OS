@@ -1,13 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
-from enum import Enum
+from models.enums import GasType
 
-class GasType(str, Enum):
-    CO = "CO"
-    H2S = "H2S"
-    CH4 = "CH4"
-    O2 = "O2"
-    SO2 = "SO2"
+
 
 class SensorLogBase(BaseModel):
     zone_id : str

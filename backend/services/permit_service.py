@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from datetime import datetime
 import uuid
 from db.db import get_connection
+from utils import convert_to_permit
 
 def register(request : PermitCreate) -> PermitResponse:
     if request is None:
@@ -80,12 +81,5 @@ def get_active_permits() -> list[PermitResponse]:
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
 
-def convert_to_permit(row) -> PermitResponse:
-    return PermitResponse(
-        permit_id=row["permit_id"],
-        zone_id=row["zone_id"],
-        work_type=row["work_type"],
-        assigned_team=row["assigned_team"],
-        status=row["status"],
-        created_at=row["created_at"]
-    )
+
+

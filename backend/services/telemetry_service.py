@@ -1,7 +1,9 @@
 from fastapi import HTTPException
-from models.telemetry import SensorLogResponse , SensorLogCreate, GasType
+from models.telemetry import SensorLogResponse , SensorLogCreate
+from models.enums import GasType
 from db.db import get_connection
 from datetime import datetime
+from utils import convert_to_sensor_log
 
 THRESHOLDS = {
     "CO" : ("above", 1.5),
@@ -61,11 +63,3 @@ def get_sensor_logs() -> list[SensorLogResponse]:
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
 
-def convert_to_sensor_log(row) -> SensorLogResponse:
-    return SensorLogResponse(
-        id=row["id"],
-        zone_id=row["zone_id"],
-        gas_ppm=row["gas_ppm"],
-        gas_type=row["gas_type"],
-        triggered_at=row["triggered_at"]
-    )
