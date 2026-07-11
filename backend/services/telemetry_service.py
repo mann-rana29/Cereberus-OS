@@ -4,6 +4,7 @@ from models.enums import GasType
 from db.db import get_connection
 from datetime import datetime
 from utils import convert_to_sensor_log
+from services.state_manager import evaluate_compound_hazard
 
 THRESHOLDS = {
     "CO" : ("above", 1.5),
@@ -28,6 +29,10 @@ def ingest_sensor_log(request : SensorLogCreate) -> SensorLogResponse | None:
 
             cursor.execute("INSERT INTO sensor_logs (zone_id,gas_type,gas_ppm,triggered_at) VALUES (?,?,?,?)" , (request.zone_id, request.gas_type,request.gas_ppm,datetime.now()))
             
+            verdict = evaluate_compound_hazard(request.zone_id, request.gas_type.value, request.gas_ppm)
+            if verdict:
+                print(f"CEREBERUS ALERT : {verdict}")
+        
             inserted_id = cursor.lastrowid
 
             conn.commit()
