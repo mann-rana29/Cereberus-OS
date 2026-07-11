@@ -43,6 +43,24 @@ def register(request : PermitCreate) -> PermitResponse:
         raise HTTPException(400, "Active permit already exists for this zone and work type")
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
+    
+def get_active_permits_for_zone(zone_id : str) -> list[PermitResponse]:
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM permits WHERE zone_id = ? AND status = ?", (zone_id,"ACTIVE",))
+
+        rows = cursor.fetchall()
+        res = []
+        for row in rows:
+            res.append(convert_to_permit(row))
+
+        conn.close()
+
+        return res
+    except Exception as e:
+        raise HTTPException(500, f"Database error : {str(e)}")
 
 def get_active_permits() -> list[PermitResponse]:
     try:
