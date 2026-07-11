@@ -45,19 +45,22 @@ def register(request : PermitCreate) -> PermitResponse:
         raise HTTPException(500, f"Database error : {str(e)}")
 
 def get_active_permits() -> list[PermitResponse]:
-    conn = get_connection()
-    cursor = conn.cursor()
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM permits WHERE status = ?", ("ACTIVE",))
+        cursor.execute("SELECT * FROM permits WHERE status = ?", ("ACTIVE",))
 
-    rows = cursor.fetchall()
-    res = []
-    for row in rows:
-        res.append(convert_to_permit(row))
+        rows = cursor.fetchall()
+        res = []
+        for row in rows:
+            res.append(convert_to_permit(row))
 
-    conn.close()
+        conn.close()
 
-    return res
+        return res
+    except Exception as e:
+        raise HTTPException(500, f"Database error : {str(e)}")
 
 def convert_to_permit(row) -> PermitResponse:
     return PermitResponse(
