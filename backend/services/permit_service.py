@@ -24,10 +24,35 @@ def register(request : PermitCreate) -> PermitResponse:
     conn.close()
 
     return PermitResponse(
-        permid_id=permit_id,
+        permit_id=permit_id,
         work_type=request.work_type,
         zone_id=request.zone_id,
         assigned_team=request.assigned_team,
         status="ACTIVE",
         created_at=datetime.now()
+    )
+
+def get_active_permits() -> list[PermitResponse]:
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM permits WHERE status = ?", ("ACTIVE",))
+
+    rows = cursor.fetchall()
+    res = []
+    for row in rows:
+        res.append(convert_to_permit(row))
+
+    conn.close()
+
+    return res
+
+def convert_to_permit(row) -> PermitResponse:
+    return PermitResponse(
+        permit_id=row["permit_id"],
+        zone_id=row["zone_id"],
+        work_type=row["work_type"],
+        assigned_team=row["assigned_team"],
+        status=row["status"],
+        created_at=row["created_at"]
     )

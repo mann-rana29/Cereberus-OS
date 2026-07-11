@@ -10,6 +10,6 @@ class PermitCreate(PermitBase):
     pass
 
 class PermitResponse(PermitBase):
-    permid_id : str
+    permit_id : str
     status : str = 'ACTIVE'
     created_at : datetime
