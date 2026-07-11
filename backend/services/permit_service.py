@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from datetime import datetime
 import uuid
 from db.db import get_connection
+from models.enums import WorkType
 from utils import convert_to_permit
 
 def register(request : PermitCreate) -> PermitResponse:
@@ -78,6 +79,30 @@ def get_active_permits() -> list[PermitResponse]:
         conn.close()
 
         return res
+    except Exception as e:
+        raise HTTPException(500, f"Database error : {str(e)}")
+    
+def revoke_permit(zone_id : str, assigned_team : str, work_type : WorkType):
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT permit_id FROM permits WHERE zone_id = ? AND assigned_team = ? AND work_type = ? AND status = 'ACTIVE' ", (zone_id,assigned_team,work_type.value))
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            raise HTTPException(404 , "No active permit found for given details")
+        
+        permit_id = row["permit_id"]
+        cursor.execute("UPDATE permits SET status = 'REVOKED' WHERE permit_id = ? ", (permit_id,))
+
+        conn.commit()
+        conn.close()
+
+        return {"message" : "Permit revoked successfully"}
+    except HTTPException:
+        raise HTTPException(404 , "No active permit found for given details")
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
 

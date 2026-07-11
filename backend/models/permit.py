@@ -14,3 +14,8 @@ class PermitResponse(PermitBase):
     permit_id : str
     status : PermitStatus = 'ACTIVE'
     created_at : datetime
+
+class RevokeRequest(BaseModel):
+    zone_id : str
+    assigned_team : str
+    work_type : WorkType
