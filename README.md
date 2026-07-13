@@ -1,4 +1,4 @@
-# Cerberus OS
+# Cereberus OS
 
 Air-gapped, local, event-driven industrial safety intelligence engine for heavy manufacturing plants.
 
