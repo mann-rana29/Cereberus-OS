@@ -60,7 +60,7 @@ flowchart TD
     L --> M[Kokoro TTS synthesis]
     M --> N[Broadcast over walkie-talkie]
 ```
-# DB Schema
+## DB Schema
 
 ```mermaid
 erDiagram
