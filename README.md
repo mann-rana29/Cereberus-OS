@@ -12,13 +12,13 @@ A welding crew can walk into a zone with an active hot work permit while CO leve
 
 This is not a hardware problem. The sensors work. The permits exist. The failure is the absence of an automated coordination layer between them.
 
-Cerberus OS is that layer.
+Cereberus OS is that layer.
 
 ---
 
 ## What It Does
 
-Cerberus OS listens to incoming sensor telemetry, filters out normal readings, and cross-references dangerous readings against active work permits in the same zone. When both conditions are present simultaneously — elevated gas and human activity — it declares a compound hazard violation and broadcasts a voice alert in Hindi directly over the zone's radio channel.
+Cereberus OS listens to incoming sensor telemetry, filters out normal readings, and cross-references dangerous readings against active work permits in the same zone. When both conditions are present simultaneously — elevated gas and human activity — it declares a compound hazard violation and broadcasts a voice alert in Hindi directly over the zone's radio channel.
 
 A single gas spike alone does not trigger an alert. A permit alone does not trigger an alert. Only the combination does. This is the core design decision.
 
