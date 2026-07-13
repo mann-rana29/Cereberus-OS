@@ -42,6 +42,65 @@ Faster-Whisper handles Hindi speech-to-text from operator walkie-talkies. Kokoro
 
 ---
 
+## Full System Flow
+
+```mermaid
+flowchart TD
+    A[SCADA Sensors] -->|raw telemetry| B[Kafka / WebSocket Consumer]
+    B -->|parsed frame| C{Threshold Filter}
+    C -->|below threshold| D[Drop - no action]
+    C -->|above threshold| E[Log to sensor_logs]
+    E --> F{Active permit in zone?}
+    F -->|no permit| G[Return - no hazard]
+    F -->|permit exists| H[Assemble context]
+    H --> I[RAG - ChromaDB OISD lookup]
+    I --> J[LLM Inference - Qwen3]
+    J -->|OPERATIONS_CLEAR| K[Log and continue]
+    J -->|CRITICAL_HAZARD_VIOLATION| L[Generate Hindi alert text]
+    L --> M[Kokoro TTS synthesis]
+    M --> N[Broadcast over walkie-talkie]
+```
+# DB Schema
+
+```mermaid
+erDiagram
+    permits {
+        TEXT permit_id PK
+        TEXT zone_id
+        TEXT work_type
+        TEXT assigned_team
+        TEXT status
+        TIMESTAMP created_at
+    }
+    sensor_logs {
+        INTEGER id PK
+        TEXT zone_id
+        TEXT gas_type
+        REAL gas_ppm
+        TIMESTAMP triggered_at
+    }
+```
+
+## API Routes
+```mermaid
+flowchart LR
+    client[Client / Injector]
+    client -->|POST /permit/| R1[register_permit]
+    client -->|GET /permit/| R2[get_active_permits]
+    client -->|PATCH /permit/revoke| R3[revoke_permit]
+    client -->|POST /telemetry/event| R4[ingest_sensor_log]
+    client -->|GET /telemetry/logs| R5[get_sensor_logs]
+    R1 --> S1[permit_service]
+    R2 --> S1
+    R3 --> S1
+    R4 --> S2[telemetry_service]
+    R4 --> S3[state_manager]
+    R5 --> S2
+    S1 --> DB[(active_plant.db)]
+    S2 --> DB
+    S3 --> DB
+```
+
 ## Project Structure
 
 ```
