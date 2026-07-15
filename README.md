@@ -55,21 +55,6 @@ Cerberus OS listens to incoming sensor telemetry, filters out normal readings, a
 
 ---
 
-## Demo Video
-
-> 🎬 **2-minute walkthrough** showing all three frontend pages, live sensor data, permit management, and the audit trail.
-
-![Cerberus OS Demo](demo.webp)
-
-**What the demo shows:**
-1. **Plant Dashboard** — Live zone status grid (battery_4, battery_3, pump_station_p3a) with green/red status cards
-2. **Permit Registration** — Creating a new confined space work permit for Safety Team Alpha
-3. **Audit Log** — Auto-refreshing sensor telemetry table with CO, H2S, SO2 readings
-4. **Operator Portal** — Active permits displayed as cards with "No active alerts" status
-5. **SSE Stream** — Real-time alert delivery via Server-Sent Events
-
----
-
 ## Architecture
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed system diagram, data flow, and design decisions.
@@ -252,7 +237,8 @@ CEREBERUS OS/
 │   ├── index.html                       # Plant Dashboard (SSE + permits)
 │   ├── compliance.html                  # Audit Log (auto-refreshing table)
 │   └── copilot.html                     # Operator Portal (read-only view)
-├── demo.webp                            # Demo video
+├── demo.mp4                             # Demo video (1080p MP4 format)
+├── demo.webp                            # Demo video (animated WebP)
 ├── README.md                            # This file
 └── ARCHITECTURE.md                      # Detailed architecture document
 ```
