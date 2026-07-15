@@ -25,18 +25,17 @@ def ingest_sensor_log(request : SensorLogCreate) -> SensorLogResponse | None:
     try:
         if check_threshold(request.gas_type, request.gas_ppm):
             conn = get_connection()
-            cursor = conn.cursor()
-
-            cursor.execute("INSERT INTO sensor_logs (zone_id,gas_type,gas_ppm,triggered_at) VALUES (?,?,?,?)" , (request.zone_id, request.gas_type,request.gas_ppm,datetime.now()))
+            try:
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO sensor_logs (zone_id,gas_type,gas_ppm,triggered_at) VALUES (?,?,?,?)" , (request.zone_id, request.gas_type,request.gas_ppm,datetime.now()))
+                inserted_id = cursor.lastrowid
+                conn.commit()
+            finally:
+                conn.close()
             
             verdict = evaluate_compound_hazard(request.zone_id, request.gas_type.value, request.gas_ppm)
             if verdict:
                 print(f"CEREBERUS ALERT : {verdict}")
-        
-            inserted_id = cursor.lastrowid
-
-            conn.commit()
-            conn.close()
 
             return SensorLogResponse(
                 id=inserted_id,
@@ -54,16 +53,16 @@ def ingest_sensor_log(request : SensorLogCreate) -> SensorLogResponse | None:
 def get_sensor_logs() -> list[SensorLogResponse]:
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM sensor_logs")
-        res = []
-        rows = cursor.fetchall()
-
-        for row in rows:
-            res.append(convert_to_sensor_log(row))
-
-        return res
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM sensor_logs")
+            res = []
+            rows = cursor.fetchall()
+            for row in rows:
+                res.append(convert_to_sensor_log(row))
+            return res
+        finally:
+            conn.close()
     
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")

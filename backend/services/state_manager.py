@@ -15,7 +15,6 @@ def evaluate_compound_hazard(zone_id: str, gas_type: str, gas_ppm: float):
     verdict["gas_type"] = gas_type
     verdict["gas_ppm"] = gas_ppm
 
-    if verdict.get("status_code") == "CRITICAL_HAZARD_VIOLATION":
-        set_latest_alert(verdict)
+    set_latest_alert(verdict)
 
     return verdict

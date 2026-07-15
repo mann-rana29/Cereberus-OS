@@ -331,7 +331,7 @@ curl -X POST http://localhost:8000/telemetry/event \
 
 **Backend Terminal Output:**
 ```
-CEREBERUS ALERT : {'status_code': 'CRITICAL_HAZARD_VIOLATION', 'reason': 'CO at 2.4 PPM with active hot work permit creates danger', 'audio_phrase_hindi': 'खतरा! बैटरी 4 में CO गैस...', 'zone': 'battery_4', 'gas_type': 'CO', 'gas_ppm': 2.4}
+CEREBERUS ALERT : {'status_code': 'CRITICAL_HAZARD_VIOLATION', 'reason': 'CO at 2.4 PPM with active hot work permit creates danger', 'audio_phrase': 'Warning! Evacuate battery_4 immediately! High CO hazard detected.', 'zone': 'battery_4', 'gas_type': 'CO', 'gas_ppm': 2.4}
 ```
 
 ### 3. Revoke a Permit
@@ -502,8 +502,8 @@ Readings below these values are dropped before any processing occurs:
 
 1. **Borderline readings** — Gas PPM values near threshold boundaries may produce inconsistent verdicts
 2. **Model hallucination** — Qwen3 0.6B occasionally includes extra text around the JSON; robust brace-finding mitigates this
-3. **Database locks** — Under heavy concurrent write load, SQLite may briefly lock; `timeout=10` and try/except in the consumer handle this gracefully
-4. **Hindi audio phrases** — Quality of Hindi text varies; not all verdicts produce usable walkie-talkie phrases
+3. **Database locks** — Under heavy concurrent load, SQLite is configured with WAL mode and `timeout=30` to prevent deadlocks
+4. **Walkie-talkie audio phrases** — Quality of concise warning phrases can vary depending on prompt nuance
 
 ---
 
@@ -590,15 +590,11 @@ Readings below these values are dropped before any processing occurs:
 | Frontend Operator Portal | ✅ Complete |
 | SSE real-time alerts | ✅ Complete |
 | Stream consumer (sensor sim) | ✅ Complete |
-| ChromaDB RAG (OISD lookup) | 🔜 Pending (requires GPU) |
-| Faster-Whisper Hindi STT | 🔜 Pending (requires GPU) |
-| Kokoro-82M TTS voice alerts | 🔜 Pending (requires GPU) |
 
 ---
 
 ## Tech Stack
 
-- **Backend**: Python, FastAPI, SQLite, Pydantic
+- **Backend**: Python, FastAPI, SQLite (WAL mode), Pydantic
 - **AI**: Ollama, Qwen3:0.6B (local, on-device)
 - **Frontend**: HTML, Tailwind CSS (CDN), Alpine.js (CDN)
-- **Planned**: ChromaDB, SentenceTransformers, Faster-Whisper, Kokoro-82M

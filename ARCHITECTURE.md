@@ -94,10 +94,10 @@ sequenceDiagram
         else Permits exist
             SM->>LLM: get_llm_verdict(zone, gas, ppm, permits)
             Note over LLM: Prompt includes:<br/>- Zone ID<br/>- Gas type + PPM<br/>- Active permit details<br/>- Safety thresholds<br/>- Required JSON format
-            LLM-->>SM: {status_code, reason, audio_phrase_hindi}
+            LLM-->>SM: {status_code, reason, audio_phrase}
             SM->>SM: Enrich with zone, gas_type, gas_ppm
+            SM->>AR: set_latest_alert(verdict)
             alt CRITICAL_HAZARD_VIOLATION
-                SM->>AR: set_latest_alert(verdict)
                 AR-->>FE: SSE event broadcast
             end
             SM-->>TS: verdict
@@ -178,14 +178,14 @@ Raw Reading → Threshold Check → DB Insert → Permit Lookup → LLM Evaluati
 
 ### 3. SQLite Over PostgreSQL
 
-**Decision**: Use SQLite with `timeout=10`.
+**Decision**: Use SQLite with WAL mode (`journal_mode=WAL`) and `timeout=30`.
 
 **Rationale**:
 - Zero configuration, no separate database server
 - Single-file deployment
 - Sufficient for single-plant, single-shift usage
-- WAL mode handles concurrent reads well
-- `timeout=10` prevents lock failures during consumer writes
+- WAL mode ensures readers never block writers and writers never block readers
+- `timeout=30` prevents lock failures during concurrent consumer writes
 
 **Trade-off**: Not suitable for multi-plant or distributed deployment.
 
@@ -249,12 +249,6 @@ graph LR
         TW[Tailwind CSS]
         ALP[Alpine.js]
         SSE[EventSource API]
-    end
-
-    subgraph Planned
-        CR[ChromaDB]
-        FW[Faster-Whisper]
-        KK[Kokoro-82M TTS]
     end
 
     PY --> FA --> UV

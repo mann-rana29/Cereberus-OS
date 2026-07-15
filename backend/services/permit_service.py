@@ -12,25 +12,25 @@ def register(request : PermitCreate) -> PermitResponse:
 
     try:
         conn = get_connection()
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT permit_id FROM permits WHERE zone_id = ? AND work_type = ? and STATUS = ?", (request.zone_id, request.work_type, "ACTIVE"))
 
-        cursor.execute("SELECT permit_id FROM permits WHERE zone_id = ? AND work_type = ? and STATUS = ?", (request.zone_id, request.work_type, "ACTIVE"))
+            if cursor.fetchone():
+                raise HTTPException(400, "Active permit already exists for this zone and work type")
 
-        if cursor.fetchone():
+            permit_id = str(uuid.uuid4())
+            permit = ( permit_id, request.zone_id, request.work_type, request.assigned_team,"ACTIVE",datetime.now())
+
+            cursor.execute(
+                """
+                    INSERT INTO permits (permit_id,zone_id,work_type,assigned_team,status,created_at) VALUES (?,?,?,?,?,?)
+                """, permit
+            )
+
+            conn.commit()
+        finally:
             conn.close()
-            raise HTTPException(400, "Active permit already exists for this zone and work type")
-
-        permit_id = str(uuid.uuid4())
-        permit = ( permit_id, request.zone_id, request.work_type, request.assigned_team,"ACTIVE",datetime.now())
-
-        cursor.execute(
-            """
-                INSERT INTO permits (permit_id,zone_id,work_type,assigned_team,status,created_at) VALUES (?,?,?,?,?,?)
-            """, permit
-        )
-
-        conn.commit()
-        conn.close()
 
         return PermitResponse(
             permit_id=permit_id,
@@ -41,68 +41,63 @@ def register(request : PermitCreate) -> PermitResponse:
             created_at=datetime.now()
         )
     
-    except HTTPException:
-        raise HTTPException(400, "Active permit already exists for this zone and work type")
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
     
 def get_active_permits_for_zone(zone_id : str) -> list[PermitResponse]:
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM permits WHERE zone_id = ? AND status = ?", (zone_id,"ACTIVE",))
-
-        rows = cursor.fetchall()
-        res = []
-        for row in rows:
-            res.append(convert_to_permit(row))
-
-        conn.close()
-
-        return res
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM permits WHERE zone_id = ? AND status = ?", (zone_id,"ACTIVE",))
+            rows = cursor.fetchall()
+            res = []
+            for row in rows:
+                res.append(convert_to_permit(row))
+            return res
+        finally:
+            conn.close()
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
 
 def get_active_permits() -> list[PermitResponse]:
     try:
         conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("SELECT * FROM permits WHERE status = ?", ("ACTIVE",))
-
-        rows = cursor.fetchall()
-        res = []
-        for row in rows:
-            res.append(convert_to_permit(row))
-
-        conn.close()
-
-        return res
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM permits WHERE status = ?", ("ACTIVE",))
+            rows = cursor.fetchall()
+            res = []
+            for row in rows:
+                res.append(convert_to_permit(row))
+            return res
+        finally:
+            conn.close()
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
     
 def revoke_permit(zone_id : str, assigned_team : str, work_type : WorkType):
     try:
         conn = get_connection()
-        cursor = conn.cursor()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("SELECT permit_id FROM permits WHERE zone_id = ? AND assigned_team = ? AND work_type = ? AND status = 'ACTIVE' ", (zone_id,assigned_team,work_type.value))
+            row = cursor.fetchone()
 
-        cursor.execute("SELECT permit_id FROM permits WHERE zone_id = ? AND assigned_team = ? AND work_type = ? AND status = 'ACTIVE' ", (zone_id,assigned_team,work_type.value))
-        row = cursor.fetchone()
-
-        if not row:
+            if not row:
+                raise HTTPException(404 , "No active permit found for given details")
+            
+            permit_id = row["permit_id"]
+            cursor.execute("UPDATE permits SET status = 'REVOKED' WHERE permit_id = ? ", (permit_id,))
+            conn.commit()
+        finally:
             conn.close()
-            raise HTTPException(404 , "No active permit found for given details")
-        
-        permit_id = row["permit_id"]
-        cursor.execute("UPDATE permits SET status = 'REVOKED' WHERE permit_id = ? ", (permit_id,))
-
-        conn.commit()
-        conn.close()
 
         return {"message" : "Permit revoked successfully"}
-    except HTTPException:
-        raise HTTPException(404 , "No active permit found for given details")
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(500, f"Database error : {str(e)}")
 
