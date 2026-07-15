@@ -5,6 +5,7 @@ class WorkType(str, Enum):
     confined_space = "CONFINED_SPACE"
     electrical = "ELECTRICAL"
     cold_work = "COLD_WORK"
+    welding = "WELDING"
 
 class PermitStatus(str, Enum):
     ACTIVE = "ACTIVE"

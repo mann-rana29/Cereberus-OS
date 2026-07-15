@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerberus OS — Operator Portal</title>
+    <meta name="description" content="Operator view showing active permits and latest safety alert status.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fade-in 0.4s ease-out; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: '#111827',
+                        card: '#1f2937',
+                        accent: '#10b981',
+                        danger: '#ef4444',
+                        muted: '#9ca3af',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-gray-100 min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-card/80 backdrop-blur border-b border-gray-700/50 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-accent animate-pulse"></div>
+                <span class="font-bold text-lg tracking-tight">CERBERUS OS</span>
+            </div>
+            <div class="flex gap-6 text-sm font-medium">
+                <a href="index.html" class="text-muted hover:text-gray-100 transition-colors">Dashboard</a>
+                <a href="compliance.html" class="text-muted hover:text-gray-100 transition-colors">Audit Log</a>
+                <a href="copilot.html" class="text-accent border-b-2 border-accent pb-0.5">Operator Portal</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8" x-data="operatorPortal()">
+
+        <!-- Page Title -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-extrabold tracking-tight">Operator Portal</h1>
+            <p class="text-muted text-sm mt-1">Active permits &amp; current alert status</p>
+        </div>
+
+        <!-- Latest Alert -->
+        <section class="mb-10">
+            <h2 class="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Latest Alert</h2>
+            <div class="bg-card border border-gray-700/50 rounded-xl p-6 fade-in">
+                <template x-if="alert && alert.status_code">
+                    <div class="flex items-start gap-4">
+                        <div :class="alert.status_code === 'CRITICAL_HAZARD_VIOLATION' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'" class="rounded-lg p-3 flex-shrink-0">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <template x-if="alert.status_code === 'CRITICAL_HAZARD_VIOLATION'">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </template>
+                                <template x-if="alert.status_code !== 'CRITICAL_HAZARD_VIOLATION'">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </template>
+                            </svg>
+                        </div>
+                        <div class="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                                <span class="text-muted block text-xs mb-1">Status</span>
+                                <span class="font-semibold" :class="alert.status_code === 'CRITICAL_HAZARD_VIOLATION' ? 'text-red-400' : 'text-emerald-400'" x-text="alert.status_code"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted block text-xs mb-1">Zone</span>
+                                <span class="font-mono font-semibold" x-text="alert.zone || '—'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted block text-xs mb-1">Gas / PPM</span>
+                                <span class="font-semibold" x-text="(alert.gas_type || '—') + ' @ ' + (alert.gas_ppm ?? '—') + ' PPM'"></span>
+                            </div>
+                            <div>
+                                <span class="text-muted block text-xs mb-1">Reason</span>
+                                <span class="font-medium text-gray-300" x-text="alert.reason || '—'"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+                <template x-if="!alert || !alert.status_code">
+                    <div class="flex items-center gap-3 text-muted">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-sm">No active alerts — all zones clear</span>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- Active Permits -->
+        <section>
+            <h2 class="text-sm font-semibold text-muted uppercase tracking-wider mb-4">Active Permits</h2>
+            <template x-if="permits.length === 0">
+                <div class="bg-card border border-gray-700/50 rounded-xl p-8 text-center text-muted text-sm">
+                    No active permits
+                </div>
+            </template>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="permit in permits" :key="permit.permit_id">
+                    <div class="bg-card border border-gray-700/50 rounded-xl p-5 hover:border-accent/40 transition-colors fade-in">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-mono text-xs text-muted" x-text="permit.permit_id"></span>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-semibold px-2 py-0.5 rounded-full" x-text="permit.status"></span>
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-muted">Zone</span>
+                                <span class="font-mono font-semibold" x-text="permit.zone_id"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted">Work Type</span>
+                                <span class="font-semibold" x-text="permit.work_type"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted">Team</span>
+                                <span class="font-semibold" x-text="permit.assigned_team"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted">Created</span>
+                                <span class="text-xs text-muted" x-text="formatTime(permit.created_at)"></span>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        const API = 'http://localhost:8000';
+
+        function operatorPortal() {
+            return {
+                permits: [],
+                alert: null,
+
+                init() {
+                    this.fetchPermits();
+                    this.fetchAlert();
+                    // Auto-refresh every 15 seconds
+                    setInterval(() => {
+                        this.fetchPermits();
+                        this.fetchAlert();
+                    }, 15000);
+                },
+
+                async fetchPermits() {
+                    try {
+                        const res = await fetch(`${API}/permit/`);
+                        this.permits = await res.json();
+                    } catch (e) {
+                        console.error('Failed to fetch permits', e);
+                    }
+                },
+
+                async fetchAlert() {
+                    try {
+                        const res = await fetch(`${API}/alerts/latest`);
+                        this.alert = await res.json();
+                    } catch (e) {
+                        console.error('Failed to fetch latest alert', e);
+                    }
+                },
+
+                formatTime(ts) {
+                    if (!ts) return '—';
+                    return new Date(ts).toLocaleString();
+                },
+            };
+        }
+    </script>
+</body>
+</html>

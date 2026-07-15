@@ -105,24 +105,25 @@ flowchart LR
 
 ```
 CEREBERUS OS/
-├── db/
-│   ├── data/
-│   │   └── active_plant.db
-│   └── db.py
-├── models/
-│   ├── enums.py
-│   ├── permit.py
-│   └── telemetry.py
-├── routers/
-│   ├── permit_router.py
-│   └── telemetry_router.py
-├── services/
-│   ├── permit_service.py
-│   ├── telemetry_service.py
-│   └── state_manager.py
-├── injector.py
-├── main.py
-└── requirements.txt
+├── backend/
+    ├── db/
+    │   ├── data/
+    │   │   └── active_plant.db
+    │   └── db.py
+    ├── models/
+    │   ├── enums.py
+    │   ├── permit.py
+    │   └── telemetry.py
+    ├── routers/
+    │   ├── permit_router.py
+    │   └── telemetry_router.py
+    ├── services/
+    │   ├── permit_service.py
+    │   ├── telemetry_service.py
+    │   └── state_manager.py
+    ├── injector.py
+    ├── main.py
+    └── requirements.txt
 ```
 
 ---

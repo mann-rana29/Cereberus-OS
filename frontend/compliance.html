@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cerberus OS — Audit Log</title>
+    <meta name="description" content="Compliance audit log showing all sensor readings and threshold violations.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fade-in 0.4s ease-out; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        surface: '#111827',
+                        card: '#1f2937',
+                        accent: '#10b981',
+                        danger: '#ef4444',
+                        muted: '#9ca3af',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-gray-100 min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-card/80 backdrop-blur border-b border-gray-700/50 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-3 h-3 rounded-full bg-accent animate-pulse"></div>
+                <span class="font-bold text-lg tracking-tight">CERBERUS OS</span>
+            </div>
+            <div class="flex gap-6 text-sm font-medium">
+                <a href="index.html" class="text-muted hover:text-gray-100 transition-colors">Dashboard</a>
+                <a href="compliance.html" class="text-accent border-b-2 border-accent pb-0.5">Audit Log</a>
+                <a href="copilot.html" class="text-muted hover:text-gray-100 transition-colors">Operator Portal</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-6 py-8" x-data="auditLog()">
+
+        <!-- Page Title -->
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight">Audit Log</h1>
+                <p class="text-muted text-sm mt-1">Sensor telemetry &amp; threshold events — auto-refreshes every 10 s</p>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-muted">
+                <svg :class="loading ? 'spinner' : ''" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span x-text="'Last refresh: ' + lastRefresh"></span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="bg-card border border-gray-700/50 rounded-xl overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-700/50 text-left text-xs text-muted uppercase tracking-wider">
+                            <th class="px-6 py-4 font-semibold">ID</th>
+                            <th class="px-6 py-4 font-semibold">Zone</th>
+                            <th class="px-6 py-4 font-semibold">Gas Type</th>
+                            <th class="px-6 py-4 font-semibold">PPM</th>
+                            <th class="px-6 py-4 font-semibold">Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-if="logs.length === 0 && !loading">
+                            <tr>
+                                <td colspan="5" class="text-center py-12 text-muted">No sensor logs recorded yet</td>
+                            </tr>
+                        </template>
+                        <template x-for="log in logs" :key="log.id">
+                            <tr class="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                                <td class="px-6 py-3 font-mono text-muted" x-text="log.id"></td>
+                                <td class="px-6 py-3">
+                                    <span class="bg-gray-800 text-gray-300 text-xs font-mono px-2 py-1 rounded" x-text="log.zone_id"></span>
+                                </td>
+                                <td class="px-6 py-3 font-semibold" x-text="log.gas_type"></td>
+                                <td class="px-6 py-3">
+                                    <span class="font-mono font-semibold" :class="log.gas_ppm > 5 ? 'text-red-400' : 'text-emerald-400'" x-text="log.gas_ppm"></span>
+                                </td>
+                                <td class="px-6 py-3 text-muted text-xs" x-text="formatTime(log.triggered_at)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Summary -->
+        <div class="mt-4 text-xs text-muted">
+            <span x-text="logs.length + ' records loaded'"></span>
+        </div>
+
+    </main>
+
+    <script>
+        const API = 'http://localhost:8000';
+
+        function auditLog() {
+            return {
+                logs: [],
+                loading: false,
+                lastRefresh: '—',
+
+                init() {
+                    this.fetchLogs();
+                    setInterval(() => this.fetchLogs(), 10000);
+                },
+
+                async fetchLogs() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`${API}/telemetry/logs`);
+                        this.logs = await res.json();
+                        this.lastRefresh = new Date().toLocaleTimeString();
+                    } catch (e) {
+                        console.error('Failed to fetch logs', e);
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                formatTime(ts) {
+                    if (!ts) return '—';
+                    const d = new Date(ts);
+                    return d.toLocaleString();
+                },
+            };
+        }
+    </script>
+</body>
+</html>

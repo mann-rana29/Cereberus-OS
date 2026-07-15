@@ -1,8 +1,11 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from db.db import init_db
 from routers.permit_router import router as permit_router
 from routers.telemetry_router import router as telemetry_router
-from fastapi.middleware.cors import CORSMiddleware
+from routers.alerts_router import router as alerts_router
+from stream_consumer import run_stream_consumer
+import asyncio
 
 app = FastAPI()
 
@@ -13,13 +16,15 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-app.include_router(permit_router)
-app.include_router(telemetry_router)
-
 @app.on_event("startup")
 async def startup():
     init_db()
+    asyncio.create_task(run_stream_consumer())
+
+app.include_router(permit_router)
+app.include_router(telemetry_router)
+app.include_router(alerts_router)
 
 @app.get("/")
 def root():
-    return {"message" : "backend is working"}
+    return {"message": "Cerberus OS online"}
